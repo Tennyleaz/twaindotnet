@@ -10,7 +10,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>TwainDotNet</RootNamespace>
     <AssemblyName>TwainDotNet</AssemblyName>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>TwainDotNet.snk</AssemblyOriginatorKeyFile>
@@ -18,7 +18,8 @@
     </FileUpgradeFlags>
     <OldToolsVersion>3.5</OldToolsVersion>
     <UpgradeBackupLocation />
-    <TargetFrameworkProfile>Client</TargetFrameworkProfile>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -80,10 +81,14 @@
     <Compile Include="TwainNative\Frame.cs" />
     <Compile Include="TwainNative\ImageFileFormat.cs" />
     <Compile Include="TwainNative\ImageLayout.cs" />
+    <Compile Include="TwainNative\ImageMemXfer.cs" />
+    <Compile Include="TwainNative\Memory.cs" />
     <Compile Include="TwainNative\Orientation.cs" />
     <Compile Include="TwainNative\PageType.cs" />
     <Compile Include="TwainNative\PixelType.cs" />
+    <Compile Include="TwainNative\SetupMemXfer.cs" />
     <Compile Include="TwainNative\TransferMechanism.cs" />
+    <Compile Include="TwainNative\TwainBool.cs" />
     <Compile Include="TwainNative\TwainCapability.cs">
       <SubType>Code</SubType>
     </Compile>

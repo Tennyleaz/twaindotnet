@@ -63,5 +63,10 @@ namespace TwainDotNet.TwainNative
         [DllImport("twain_32.dll", EntryPoint = "#1")]
         public static extern TwainResult DsCapability([In, Out] Identity origin, [In] Identity dest, DataGroup dg, DataArgumentType dat, Message msg, [In, Out] TwainCapability capa);
 
+        [DllImport("twain_32.dll", EntryPoint = "#1")]
+        public static extern TwainResult DsSetupMemXfer([In, Out] Identity origin, [In] Identity dest, DataGroup dg, DataArgumentType dat, Message msg, [In, Out] SetupMemXfer memxfer);
+
+        [DllImport("twain_32.dll", EntryPoint = "#1")]
+        public static extern TwainResult DsImageMemXfer([In, Out] Identity origin, [In] Identity dest, DataGroup dg, DataArgumentType dat, Message msg, [In, Out] ImageMemXfer memxfer);
     }
 }

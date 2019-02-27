@@ -9,16 +9,25 @@ using System.Drawing;
 
 namespace TwainDotNet
 {
-    public class Twain
+    public class Twain : IDisposable
     {
-        DataSourceManager _dataSourceManager;
+        private DataSourceManager _dataSourceManager;
 
-        public Twain(IWindowsMessageHook messageHook)
+        public bool IsIncremental { get; private set; }
+
+        /// <summary>
+        /// Twain dll的最外層。當建構子完成，代表進入twain state 3，接下來就可以去open data souse了。
+        /// </summary>
+        /// <param name="messageHook"></param>
+        /// <param name="useIncremental">使用一次性傳輸或是buffered memory mode傳輸</param>
+        public Twain(IWindowsMessageHook messageHook, bool useIncremental = true)
         {
             ScanningComplete += delegate { };
             TransferImage += delegate { };
 
             _dataSourceManager = new DataSourceManager(DataSourceManager.DefaultApplicationId, messageHook);
+            IsIncremental = useIncremental;
+            _dataSourceManager.UseIncrementalMemoryXfer = useIncremental;
             _dataSourceManager.ScanningComplete += delegate(object sender, ScanningCompleteEventArgs args)
             {
                 ScanningComplete(this, args);
@@ -100,6 +109,24 @@ namespace TwainDotNet
 
                 return result;
             }
+        }
+
+        /// <summary>
+        /// 偵測有沒有紙，需要先select一個data source。
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="PaperJamException">在data source開啟後，讀取紙張問題，就會擲回</exception>
+        public bool IsPaperOn()
+        {
+            return _dataSourceManager.IsPaperOn();
+        }
+
+        public void Dispose()
+        {
+            ((IDisposable)_dataSourceManager).Dispose();
+            _dataSourceManager = null;
+            ScanningComplete = null;
+            TransferImage = null;
         }
     }
 }

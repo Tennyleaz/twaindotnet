@@ -7,8 +7,11 @@ namespace TwainDotNet
 {
     public class DataSource : IDisposable
     {
-        Identity _applicationId;
-        IWindowsMessageHook _messageHook;
+        private const ushort TWSX_NATIVE = 1;
+        private const ushort TWSX_MEMORY = 2;
+        private readonly Identity _applicationId;
+        private readonly IWindowsMessageHook _messageHook;
+        private bool isOpened;
 
         public DataSource(Identity applicationId, Identity sourceId, IWindowsMessageHook messageHook)
         {
@@ -23,6 +26,70 @@ namespace TwainDotNet
         }
 
         public Identity SourceId { get; private set; }
+
+        /// <summary>
+        /// 先open data source進入state 4，然後才做Capability Negotiation
+        /// </summary>
+        /// <param name="settings"></param>
+        /// <param name="useMemoryMode"></param>
+        /// <returns></returns>
+        public bool OpenAndScan(ScanSettings settings, bool useMemoryMode)
+        {
+            if (!isOpened)
+                OpenSource();
+            // This is twain state 4,
+            // the only state wherein capabilities can be set or reset.
+            // Set whether or not to show progress window
+
+            //NegotiateProgressIndicator(settings);  // ←do this first to suppresss error messages
+
+            if (settings.AbortWhenNoPaperDetectable && !PaperDetectable)
+            {
+                throw new FeederEmptyException("Feeder is empty.");
+            }
+
+            NegotiateTransferCount(settings);
+            NegotiateFeeder(settings);
+            NegotiateDuplex(settings);
+
+            if (settings.UseDocumentFeeder == true &&
+                settings.Page != null)
+            {
+                NegotiatePageSize(settings);
+                NegotiateOrientation(settings);
+            }
+
+            if (settings.Area != null)
+            {
+                NegotiateArea(settings);
+            }
+
+            if (settings.Resolution != null)
+            {
+                NegotiateColour(settings);
+                NegotiateResolution(settings);
+            }
+
+            // Configure automatic rotation and image border detection
+            if (settings.Rotation != null)
+            {
+                NegotiateAutomaticRotate(settings);
+                NegotiateAutomaticBorderDetection(settings);
+            }
+
+            if (useMemoryMode)
+            {
+                NegotiateBufferedMode(TWSX_MEMORY);
+            }
+            else
+            {
+                // 高階掃描器的狀況
+                NegotiateADF();
+            }
+
+            // Go from twain state 4 to 5
+            return Enable(settings);
+        }
 
         public void NegotiateTransferCount(ScanSettings scanSettings)
         {
@@ -298,6 +365,21 @@ namespace TwainDotNet
             }
         }
 
+        /// <summary>
+        /// Set indicators to fallse.
+        /// </summary>
+        public void NegotiateProgressIndicator()
+        {
+            try
+            {
+                Capability.SetCapability(Capabilities.Indicators, false, _applicationId, SourceId);
+            }
+            catch
+            {
+                // Do nothing if the data source does not support the requested capability
+            }
+        }
+
         public bool Open(ScanSettings settings)
         {
             OpenSource();
@@ -388,6 +470,32 @@ namespace TwainDotNet
             return true;
         }
 
+        private bool NegotiateBufferedMode(ushort scanMode)
+        {
+            try
+            {
+                int iRtn = Capability.SetBasicCapability(Capabilities.IXferMech, scanMode, TwainType.UInt16, _applicationId, SourceId);
+                //Console.WriteLine(iRtn);
+            }
+            catch (Exception ex)
+            {
+                // Do nothing if the data source does not support the requested capability
+            }
+            return true;
+        }
+
+        public void NegotiateADF()
+        {
+            try
+            {
+                // TODO: High end ADF scanner specific settings
+            }
+            catch
+            {
+                // Do nothing if the data source does not support the requested capability
+            }
+        }
+
         public void OpenSource()
         {
             var result = Twain32Native.DsmIdentity(
@@ -402,6 +510,12 @@ namespace TwainDotNet
             {
                 throw new TwainException("Error opening data source", result);
             }
+            if (result != TwainResult.Success)
+            {
+                throw new TwainException("Error opening data source: " + SourceId.ProductName, result);
+            }
+            isOpened = true;
+            NegotiateProgressIndicator();  // ←do this first to suppresss error messages
         }
 
         public bool Enable(ScanSettings settings)
